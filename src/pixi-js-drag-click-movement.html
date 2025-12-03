@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>PixiJS - Rotating Bunny with Background Square</title>
+  <style>
+    body, html {
+      margin: 0; padding: 0; overflow: hidden; height: 100%;
+      touch-action: none;
+    }
+  </style>
+</head>
+<body>
+
+<script src="https://cdn.jsdelivr.net/npm/pixi.js@7/dist/pixi.min.js"></script>
+
+<script>
+
+  // Transparent canvas
+  const app = new PIXI.Application({
+    backgroundColor: 0xf00000, // doesn't matter when alpha = 0
+    antialias: true,
+    autoDensity: true,
+    resizeTo: window
+  });
+  document.body.appendChild(app.view);
+  
+  
+  const cameraContainer = new PIXI.Container();
+app.stage.addChild(cameraContainer);
+
+
+
+app.stage.eventMode = 'static';
+  // -------------------------------------------------
+  // 1. Big colored square behind the bunny
+  // -------------------------------------------------
+  const square = new PIXI.Graphics();
+  square.beginFill(0xffff, 0.85);              // dark gray, 85% opaque
+  // Make it slightly smaller than the screen for nice padding
+  const padding = 100;
+  square.drawRect(
+    padding,
+    padding,
+    app.screen.width  - padding * 2,
+    app.screen.height - padding * 2
+  );
+  square.endFill();
+
+  // Optional: rounded corners
+  square.beginFill(0xffff, 0.85);
+  square.drawRoundedRect(
+    padding,
+    padding,
+    app.screen.width  - padding * 2,
+    app.screen.height - padding * 2,
+    40                                 // corner radius
+  );
+  square.endFill();
+
+  cameraContainer.addChild(square);
+
+  // -------------------------------------------------
+  // 2. Rotating bunny on top
+  // -------------------------------------------------
+  const bunny = PIXI.Sprite.from('https://pixijs.com/assets/bunny.png');
+  bunny.anchor.set(0.5);
+  bunny.scale.set(1);
+  
+  function centerBunny() {
+    bunny.x = app.screen.width  / 2;
+    bunny.y = app.screen.height / 2;
+  }
+  centerBunny();
+
+  cameraContainer.addChild(bunny);
+
+  // Rotate animation
+  app.ticker.add((delta) => {
+    bunny.rotation += 0.05 * delta;
+  });
+
+  // Keep everything centered when the window is resized
+  window.addEventListener('resize', () => {
+    // Re-draw the square with new size
+    square.clear();
+    square.beginFill(0x222222, 0.85);
+    square.drawRoundedRect(
+      padding,
+      padding,
+      app.screen.width  - padding * 2,
+      app.screen.height - padding * 2,
+      40
+    );
+    square.endFill();
+
+    centerBunny();
+  });
+  
+  // -------------------------------------------------
+  // Tap/Pointer Down: Instantly move bunny to pointer position
+  // -------------------------------------------------// Make stage interactive to capture pointer events everywhere
+  
+  let isDrawing = false;
+  let startPos = null;
+  let containerStartPos = null;
+  
+  
+  app.stage.interactive = true;
+  app.stage.hitArea = app.screen;
+  console.log(app.screen)
+  app.stage.on('pointerdown', (event) => {
+  	isDrawing = true;
+    const pos = event.data.getLocalPosition(app.stage);
+    startPos = { x: pos.x, y: pos.y }; 
+    containerStartPos = { x: cameraContainer.x, y: cameraContainer.y }; 
+  });
+  
+  
+  // Pointer Move → draw if holding down
+  app.stage.on('pointermove', (e) => {
+    if (!isDrawing) return;
+    const pos = e.data.global;
+	
+    // Calculate distance from the original down position
+    const dx = pos.x - startPos.x;
+    const dy = pos.y - startPos.y;
+    let distance = Math.sqrt(dx * dx + dy * dy);
+    //console.log(pos)
+    if(distance >= 5){
+    	console.log('ds');
+    	cameraContainer.x = containerStartPos.x + dx
+    	cameraContainer.y = containerStartPos.y + dy
+    }
+    
+  });
+  
+  // Pointer Up / Leave → stop drawing
+  app.stage.on('pointerup', (e) => {
+	const pos = e.data.global;
+    
+    // Calculate distance from the original down position
+    const dx = pos.x - startPos.x;
+    const dy = pos.y - startPos.y;
+    let distance = Math.sqrt(dx * dx + dy * dy);
+    console.log(pos)
+    if(distance < 5) {  // remember start point
+   	
+    bunny.x = pos.x - containerStartPos.x;
+    bunny.y = pos.y - containerStartPos.y;
+    }
+  	isDrawing = false;
+  
+  });
+  app.stage.on('pointerupoutside', (e) => { 
+  	const pos = e.data.global;
+    
+    // Calculate distance from the original down position
+    const dx = pos.x - startPos.x;
+    const dy = pos.y - startPos.y;
+    let distance = Math.sqrt(dx * dx + dy * dy);
+    
+  isDrawing = false;console.log('o');
+  
+  });
+  
+  
+</script>
+
+</body>
+</html>
