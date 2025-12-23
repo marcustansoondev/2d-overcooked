@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+    <meta charset="UTF-8">
+    <title>Untitled</title>
+    <style>
+      body{margin:0;background:#000;overflow:hidden}
+    </style>
+
+  </head>
+    
+  <body>
+  
+    <script src='https://cdn.jsdelivr.net/npm/pixi.js@7/dist/pixi.min.js'></script>
+    <script>
+// Create the application (fills the whole window)
+const app = new PIXI.Application({
+	backgroundColor: 0x0a0a0a,
+	resizeTo: window
+});
+document.body.appendChild(app.view);
+
+PIXI.Assets.add({
+	alias: "knife",
+	src:
+		"https://cdn.jsdelivr.net/gh/marcustansoondev/2d-overcooked@main/assets/animation/chef-knifing-675x700.png"
+});
+PIXI.Assets.add({
+	alias: "idle-carry",
+	src:
+		"https://cdn.jsdelivr.net/gh/marcustansoondev/2d-overcooked@main/assets/animation/chef-idle-carry-675x700.png"
+});
+PIXI.Assets.add({
+	alias: "walk",
+	src:
+		"https://cdn.jsdelivr.net/gh/marcustansoondev/2d-overcooked@main/assets/animation/chef-walking-900x700-updated.png"
+});
+
+
+const texturesPromise = PIXI.Assets.load(["idle-carry", "knife", "walk"]);
+
+texturesPromise.then((textures) => setup(textures));
+
+function setup(textures) {
+	const knifeFrames = createFrames(textures.knife, 225, 350, 5);
+	const idleCarryFrames = createFrames(textures['idle-carry'], 225, 350, 5);
+	const walkFrames = createFrames(textures['walk'], 225, 350, 4);
+
+	const knifeAnim = new PIXI.AnimatedSprite(knifeFrames);
+	const idleCarryAnim = new PIXI.AnimatedSprite(idleCarryFrames);
+	const walkAnimation = new PIXI.AnimatedSprite(walkFrames);
+
+	// Optional settings
+	/*[knifeAnim, idleAnim, walkAnim].forEach((anim) => {
+		anim.animationSpeed = 0.1; // adjust speed
+		anim.loop = true;
+	});*/
+
+	// Start with idle
+	//idleAnim.play();
+	//app.stage.addChild(idleAnim);
+	walkAnimation.play();
+	walkAnimation.scale.set(0.5);
+	walkAnimation.animationSpeed = 0.12;
+
+	app.stage.addChild(walkAnimation);
+}
+
+function createFrames(texture, frameWidth, frameHeight, frameCount) {
+	
+	const frames = [];
+	let frameWidthIndex = 0;
+	let frameHeightIndex = 0;
+	while (frameCount--) {
+		if(frameWidthIndex * frameWidth >= texture.width){
+			frameWidthIndex = 0;
+			frameHeightIndex++;
+		}
+		frames.push(
+			new PIXI.Texture(
+				texture,
+				new PIXI.Rectangle(frameWidth * frameWidthIndex, frameHeight * frameHeightIndex, frameWidth, frameHeight)
+			)
+		);
+		frameWidthIndex++;
+	}
+
+	return frames;
+}
+
+/*
+PIXI.Assets.load('a').then((texture) => {
+	const FRAME_WIDTH = 225;
+	const FRAME_HEIGHT = 350;
+	const ROWS = 2;
+	const COLS = 3;
+	const TOTAL_FRAMES = 5; // Only 6 real frames (bottom-right is empty!)
+
+	const frames = [];
+	let frameIndex = 0;
+
+	for (let row = 0; row < ROWS; row++) {
+		for (let col = 0; col < COLS; col++) {
+			if (frameIndex < TOTAL_FRAMES) {
+				// Skip the empty one
+				const x = col * FRAME_WIDTH;
+				const y = row * FRAME_HEIGHT;
+				const rect = new PIXI.Rectangle(x, y, FRAME_WIDTH, FRAME_HEIGHT);
+				frames.push(new PIXI.Texture(texture.baseTexture, rect));
+			}
+			frameIndex++;
+		}
+	}
+
+	// Create the chef
+	const chef = new PIXI.AnimatedSprite(frames);
+	chef.animationSpeed = 0.3; // Slower for full cycle (tweak: 0.5 for faster chops)
+	chef.loop = true;
+	chef.anchor.set(0.5); // Center on feet
+	chef.x = app.screen.width / 2;
+	chef.y = app.screen.height / 2 + 50; // Slight offset for ground level
+	chef.scale.set(0.5); // Bigger for detail
+
+	chef.scale.x = -chef.scale.x;
+	chef.play();
+
+	app.stage.addChild(chef);
+});*/
+
+// Load a sprite (bunny is built into the examples)
+// Create the bunny
+const bunny = PIXI.Sprite.from("https://pixijs.com/assets/bunny.png");
+bunny.anchor.set(0.5); // center the sprite
+bunny.scale.set(1);
+bunny.x = app.screen.width / 2;
+bunny.y = app.screen.height / 2;
+app.stage.addChild(bunny);
+
+// Make the entire stage (background) clickable
+app.stage.eventMode = "static"; // ← important in v7
+app.stage.hitArea = app.screen; // ← makes whole screen receive clicks
+app.stage.cursor = "pointer";
+
+let targetPositionX, targetPositionY;
+let shouldMove = false;
+const speed = 6; // pixels per frame (adjust for faster/slower)
+
+// Click/Tap handler
+app.stage.on("pointerdown", (event) => {
+	const targetPos = event.data.global; // click position in world space
+	targetPositionX = targetPos.x;
+	targetPositionY = targetPos.y;
+	shouldMove = true;
+});
+
+app.ticker.add((delta) => {
+	if (shouldMove) {
+		const dx = targetPositionX - bunny.x;
+		const dy = targetPositionY - bunny.y;
+		const distance = Math.sqrt(dx * dx + dy * dy);
+
+		if (distance < 5) {
+			// Arrived!
+			bunny.x = targetPositionX;
+			bunny.y = targetPositionY;
+			shouldMove = false;
+			return;
+		}
+
+		// Move towards target
+		bunny.x += (dx / distance) * speed;
+		bunny.y += (dy / distance) * speed;
+	}
+});
+    </script>
+
+  </body>
+  
+</html>
